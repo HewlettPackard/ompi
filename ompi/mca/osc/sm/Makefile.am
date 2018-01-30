@@ -1,6 +1,7 @@
 #
 # Copyright (c) 2011      Sandia National Laboratories.  All rights reserved.
 # Copyright (c) 2017      IBM Corporation.  All rights reserved.
+# Copyright (c) 2017-2018 Hewlett Packard Enterprise Development LP.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
