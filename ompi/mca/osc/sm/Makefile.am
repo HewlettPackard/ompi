@@ -17,6 +17,8 @@ sm_sources = \
 	osc_sm_active_target.c \
 	osc_sm_passive_target.c
 
+osc_sm_LIBS = -lpmem
+
 AM_CPPFLAGS = $(osc_sm_CPPFLAGS)
 
 # Make the output library in this directory, and name it either
