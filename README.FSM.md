@@ -44,3 +44,10 @@ Follow the normal Open MPI installation instructions
 except when running the configure command, use the argument: 
 
     --with-wrapper-ldflags="-lpmem"
+
+# FSM Examples
+
+Note that this branch adds a new subdirectory, "examples/fsm", which
+contains two simple applications that use fabric shared memory, converted
+into tests: a matrix multiplication test and a stencil test that uses
+shared memory for halo exchange.
