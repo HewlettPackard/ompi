@@ -6,6 +6,8 @@
  * Copyright (c) 2015-2016 Los Alamos National Security, LLC.  All rights
  *                         reserved.
  * Copyright (c) 2018      Amazon.com, Inc. or its affiliates.  All Rights reserved.
+ * Copyright (c) 2018      Hewlett Packard Enterprise Development LP. All
+ *                         rights reserved.
  * $COPYRIGHT$
  *
  * Additional copyrights may follow
@@ -17,6 +19,7 @@
 #include "opal/util/argv.h"
 #include "opal/util/show_help.h"
 #include "opal/util/printf.h"
+#include "opal/mca/common/ofi/common_ofi.h"
 
 static int ompi_mtl_ofi_component_open(void);
 static int ompi_mtl_ofi_component_query(mca_base_module_t **module, int *priority);
@@ -34,6 +37,7 @@ static int control_progress;
 static int data_progress;
 static int av_type;
 static int ofi_tag_mode;
+static bool rma_enable;
 
 /*
  * Enumerators
@@ -143,6 +147,15 @@ ompi_mtl_ofi_component_register(void)
                                     OPAL_INFO_LVL_1,
                                     MCA_BASE_VAR_SCOPE_READONLY,
                                     &prov_exclude);
+
+    rma_enable = false;
+    mca_base_component_var_register(&mca_mtl_ofi_component.super.mtl_version,
+                                    "rma_enable",
+                                    "Flag to enable RMA operations on the ofi endpoint and to set FI_MR_BASIC equivalent behavior in the provider hints.  Default is 0 (disabled); set to nonzero to enable.",
+                                    MCA_BASE_VAR_TYPE_BOOL, NULL, 0, 0,
+                                    OPAL_INFO_LVL_9,
+                                    MCA_BASE_VAR_SCOPE_READONLY,
+                                    &rma_enable);
 
     ompi_mtl_ofi.ofi_progress_event_count = 100;
     opal_asprintf(&desc, "Max number of events to read each call to OFI progress (default: %d events will be read per OFI progress call)", ompi_mtl_ofi.ofi_progress_event_count);
@@ -459,6 +472,9 @@ ompi_mtl_ofi_component_init(bool enable_progress_threads,
      *           Tag matching is specified to implement MPI semantics.
      * msg_order: Guarantee that messages with same tag are ordered.
      */
+
+    mca_common_ofi_register_mca_variables();
+
     hints = fi_allocinfo();
     if (!hints) {
         opal_output_verbose(1, ompi_mtl_base_framework.framework_output,
@@ -506,6 +522,11 @@ ompi_mtl_ofi_component_init(bool enable_progress_threads,
         hints->domain_attr->av_type          = FI_AV_TABLE;
     } else {
         hints->domain_attr->av_type          = FI_AV_MAP;
+    }
+
+    if (rma_enable) {
+        hints->caps |= FI_RMA;      /* Enable RMA operations */
+        hints->domain_attr->mr_mode = FI_MR_BASIC;  /* Memory model */
     }
 
     hints->domain_attr->resource_mgmt    = FI_RM_ENABLED;
@@ -788,6 +809,12 @@ ompi_mtl_ofi_component_init(bool enable_progress_threads,
                             __FILE__, __LINE__, ret);
         goto error;
     }
+
+    mca_common_ofi_set_ofi_info(ompi_mtl_ofi.fabric,
+                                ompi_mtl_ofi.domain,
+                                ompi_mtl_ofi.cq,
+                                ompi_mtl_ofi.av,
+                                ompi_mtl_ofi.ep);
 
     return &ompi_mtl_ofi.base;
 
